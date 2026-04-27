@@ -56,16 +56,15 @@ class UltraDetailedExplainer:
         self.all_frames = []
 
     def _create_fig(self, title="", subtitle=""):
-        """Create a professional figure with extra margins to avoid clipping"""
+        """Create a professional figure"""
         fig = plt.figure(figsize=(18, 10), facecolor=BG, dpi=120)
-        # Leave a small margin (2%) around the edges so nothing gets cut off
-        ax = fig.add_axes([0.02, 0.02, 0.96, 0.96])
+        ax = fig.add_axes([0, 0, 1, 1])
         ax.set_facecolor(BG)
         ax.set_xlim(0, 100)
         ax.set_ylim(0, 100)
         ax.axis('off')
         
-        # Top decorative bar – now inside the margin
+        # Top decorative bar
         top_bar = FancyBboxPatch((0, 94), 100, 6, boxstyle="round,pad=0.1",
                                 facecolor=PANEL, edgecolor=BLUE, linewidth=2)
         ax.add_patch(top_bar)
@@ -89,10 +88,7 @@ class UltraDetailedExplainer:
         return frame_path
 
     def _add_box(self, ax, x, y, w, h, title, content, edge_color=BLUE, title_color=None, fontsize=10):
-        """
-        Add a styled box with content.
-        Automatically adjusts font size if text would overflow.
-        """
+        """Add a styled box with content"""
         box = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.5", 
                             facecolor=BOX, edgecolor=edge_color, linewidth=1.5)
         ax.add_patch(box)
@@ -100,29 +96,19 @@ class UltraDetailedExplainer:
         if title_color is None:
             title_color = edge_color
         
-        # Title at top inside box
-        title_y = y + h - 3
-        ax.text(x + w/2, title_y, title, color=title_color, fontsize=fontsize+2, 
-               ha='center', va='center', fontweight='bold', fontfamily='serif')
+        if title:
+            ax.text(x + w/2, y + h - 3, title, color=title_color, fontsize=fontsize+2, 
+                   ha='center', va='center', fontweight='bold', fontfamily='serif')
         
-        # Prepare content lines
-        if isinstance(content, str):
-            lines = [content]
+        if isinstance(content, list):
+            current_y = y + h - 8
+            for line in content:
+                ax.text(x + 2, current_y, line, color=SILVER, fontsize=fontsize, 
+                       ha='left', va='top', fontfamily='serif')
+                current_y -= 4
         else:
-            lines = content
-        
-        # Estimate line height in data coordinates based on font size
-        line_height = 4  # empirical for this figure size
-        max_lines = max(1, int((h - 10) / line_height))  # leave space for title
-        lines = lines[:max_lines]  # truncate if too many
-        
-        current_y = title_y - 8
-        for line in lines:
-            ax.text(x + 2, current_y, line, color=SILVER, fontsize=fontsize, 
-                   ha='left', va='top', fontfamily='serif')
-            current_y -= line_height
-            if current_y < y + 3:
-                break  # stop if out of space
+            ax.text(x + w/2, y + h/2 - 2, content, color=SILVER, fontsize=fontsize,
+                   ha='center', va='center', fontfamily='serif')
 
     def _add_glow_text(self, ax, x, y, text, color, size=14, align='center'):
         """Add text with glow effect"""
@@ -145,12 +131,14 @@ class UltraDetailedExplainer:
         fig, ax = self._create_fig("HOW QUANTUM COMPUTERS BREAK ENCRYPTION", "")
         self._add_glow_text(ax, 50, 80, "A Visual Journey Through Cryptography", CYAN, 16)
         
-        # Visual: Lock
+        # Visual: Lock turning into broken pieces
         lock_center = (50, 50)
+        # Draw a lock
         lock_body = FancyBboxPatch((lock_center[0]-8, lock_center[1]-6), 16, 12, 
                                    boxstyle="round,pad=0.3", facecolor=PANEL, 
                                    edgecolor=GREEN, linewidth=3)
         ax.add_patch(lock_body)
+        # Shackle
         theta = np.linspace(0, np.pi, 30)
         r = 7
         shackle_x = lock_center[0] + r * np.cos(theta)
@@ -183,6 +171,7 @@ class UltraDetailedExplainer:
         ], RED)
         
         # Visual: Classical vs Quantum
+        # Classical computer (slow)
         rect_cl = FancyBboxPatch((10, 40), 30, 20, boxstyle="round,pad=0.3",
                                 facecolor=BOX, edgecolor=BLUE, linewidth=1)
         ax.add_patch(rect_cl)
@@ -190,6 +179,7 @@ class UltraDetailedExplainer:
         ax.text(25, 48, "2^128 operations", color=SILVER, fontsize=9, ha='center')
         ax.text(25, 43, "= Lifetime of universe", color=SILVER, fontsize=9, ha='center')
         
+        # Quantum computer (fast)
         rect_q = FancyBboxPatch((60, 40), 30, 20, boxstyle="round,pad=0.3",
                                facecolor=BOX, edgecolor=RED, linewidth=1)
         ax.add_patch(rect_q)
@@ -197,6 +187,7 @@ class UltraDetailedExplainer:
         ax.text(75, 48, "~1000 operations", color=SILVER, fontsize=9, ha='center')
         ax.text(75, 43, "= Seconds", color=SILVER, fontsize=9, ha='center')
         
+        # Arrow showing transition
         self._add_arrow(ax, 42, 50, 58, 50, RED, '-|>', 3)
         ax.text(50, 55, "BREAKS", color=RED, fontsize=8, ha='center', fontweight='bold')
         
@@ -223,19 +214,23 @@ class UltraDetailedExplainer:
             "Easy to mix, impossible to separate!"
         ], BLUE)
         
-        # Paint mixing analogy
+        # Visual: Paint mixing analogy
+        # Paint can 1
         circle1 = Circle((65, 80), 5, facecolor=RED, edgecolor=WHITE, linewidth=1)
         ax.add_patch(circle1)
         ax.text(65, 87, "Alice's\nSecret", color=SILVER, fontsize=7, ha='center')
         
+        # Paint can 2
         circle2 = Circle((85, 80), 5, facecolor=BLUE, edgecolor=WHITE, linewidth=1)
         ax.add_patch(circle2)
         ax.text(85, 87, "Bob's\nSecret", color=SILVER, fontsize=7, ha='center')
         
+        # Mixed paint
         circle3 = Circle((75, 68), 5, facecolor=PURPLE, edgecolor=WHITE, linewidth=1)
         ax.add_patch(circle3)
         ax.text(75, 64, "Shared\nSecret", color=SILVER, fontsize=7, ha='center')
         
+        # Arrows
         self._add_arrow(ax, 67, 78, 73, 72, PURPLE)
         self._add_arrow(ax, 83, 78, 77, 72, PURPLE)
         
@@ -251,6 +246,7 @@ class UltraDetailedExplainer:
         
         ax.text(50, 15, "The magic: From G and a·G, you cannot find a (Discrete Log Problem)", 
                color=YELLOW, fontsize=10, ha='center', fontstyle='italic')
+        
         self._save_frame(fig)
         
         # Frame: Visual ECDH on actual curve
@@ -264,28 +260,33 @@ class UltraDetailedExplainer:
                 if (y * y) % self.ec_p == rhs:
                     ec_points.append((x, y))
         
+        # Plot curve
         for point in ec_points:
             ax.plot(point[0] * 6 + 5, point[1] * 6 + 5, 'o', color=BLUE, markersize=8, alpha=0.4)
         
+        # Plot generator
         G_vis = (self.ec_G[0] * 6 + 5, self.ec_G[1] * 6 + 5)
         ax.plot(G_vis[0], G_vis[1], '*', color=GREEN, markersize=25, markeredgecolor=WHITE, markeredgewidth=2)
         ax.text(G_vis[0], G_vis[1] + 3, 'G (Starting Point)', color=GREEN, fontsize=10, ha='center', fontweight='bold')
         
-        # Show a random scalar multiplication path (simplified for visual)
+        # Show the operation
+        # Compute some multiples for visualization
         k_c = random.randint(2, self.ec_n-1)
-        current = (0, 0)  # point at infinity represented as (0,0)
+        
+        current = (0, 0)
         points_to_show = [(0, 0)]
         for i in range(k_c):
+            # Manual EC addition
             if current == (0, 0):
                 current = self.ec_G
             else:
-                # Simplified addition for visualization only
+                # Simplified addition for visualization
                 current = ((current[0] + self.ec_G[0]) % self.ec_p, 
                           (current[1] + self.ec_G[1] + current[0]) % self.ec_p)
             points_to_show.append(current)
         
-        # Draw path
-        for i, point in enumerate(points_to_show[:5]):
+        # Show the path
+        for i, point in enumerate(points_to_show[:5]):  # Show first 5 steps
             if i > 0:
                 x_vis = point[0] * 6 + 5
                 y_vis = point[1] * 6 + 5
@@ -313,6 +314,7 @@ class UltraDetailedExplainer:
         
         ax.text(5, 65, "The security: Finding the number of jumps is HARD", 
                color=RED, fontsize=8, fontweight='bold')
+        
         self._save_frame(fig)
 
     def create_shors_explanation(self):
@@ -329,10 +331,13 @@ class UltraDetailedExplainer:
             "Quantum computers use SUPERPOSITION to check ALL possibilities simultaneously"
         ], RED)
         
+        # Visual: Period finding concept
+        # Draw a wave
         x_wave = np.linspace(10, 90, 200)
         y_wave = 25 + 5 * np.sin(x_wave / 3)
         ax.plot(x_wave, y_wave, color=PURPLE, linewidth=2)
         
+        # Mark period
         ax.axvline(x=10 + 18.85, color=YELLOW, linestyle='--', alpha=0.5)
         ax.axvline(x=10 + 2*18.85, color=YELLOW, linestyle='--', alpha=0.5)
         ax.annotate('Period r', xy=(10 + 18.85, 32), xytext=(10 + 9, 35),
@@ -358,35 +363,44 @@ class UltraDetailedExplainer:
             "If YES → Collision found!"
         ], ORANGE)
         
-        # Visual: baby steps vs giant steps
+        # Visual: Show baby steps vs giant steps
+        # Baby steps going up
         baby_x = 15
         for i in range(8):
             y_baby = 50 + i * 3
             circle = Circle((baby_x, y_baby), 1.2, facecolor=BLUE, edgecolor=WHITE, linewidth=1)
             ax.add_patch(circle)
             ax.text(baby_x, y_baby, f'{i}G', color=SILVER, fontsize=7, ha='center', va='center')
+            
             if i > 0:
                 self._add_arrow(ax, baby_x, y_baby - 2, baby_x, y_baby - 0.8, BLUE)
         
+        # Giant steps coming down
         giant_x = 85
         for i in range(8):
             y_giant = 50 + i * 3
             circle = Circle((giant_x, y_giant), 1.2, facecolor=ORANGE, edgecolor=WHITE, linewidth=1)
             ax.add_patch(circle)
             ax.text(giant_x, y_giant, f'P-{i}mG', color=SILVER, fontsize=6, ha='center', va='center')
+            
             if i > 0:
                 self._add_arrow(ax, giant_x, y_giant - 2, giant_x, y_giant - 0.8, ORANGE)
         
+        # Collision point
         ax.text(50, 45, "When they meet:", color=WHITE, fontsize=12, ha='center')
         ax.text(50, 40, "Collision = Private Key Found!", color=RED, fontsize=14, ha='center', fontweight='bold')
         
-        # Fixed position to avoid clipping bottom
-        self._add_box(ax, 20, 20, 60, 25, "The Mathematics", [
+        # Show the math
+        self._add_box(ax, 20, 5, 60, 30, "The Mathematics", [
             "If j·G = P_c - i·mG",
             "Then P_c = (i·m + j)·G",
             "Therefore: k_c = i·m + j !",
+            "",
             "Time required: O(√n) instead of O(n)",
-            "For n=13: 4 steps instead of 13"
+            "For n=13: 4 steps instead of 13",
+            "For real ECDH (n≈2^256): 2^128 instead of 2^256",
+            "That's IMPRACTICALLY LARGE for classical computers",
+            "But polynomial for QUANTUM COMPUTERS!"
         ], WHITE, RED)
         
         self._save_frame(fig)
@@ -398,6 +412,8 @@ class UltraDetailedExplainer:
         # Frame: Attack begins
         fig, ax = self._create_fig("THE ATTACK BEGINS", "Attacker intercepts public keys")
         
+        # Network visualization
+        # Client
         client_box = FancyBboxPatch((5, 70), 25, 20, boxstyle="round,pad=0.3",
                                    facecolor=BOX, edgecolor=GREEN, linewidth=2)
         ax.add_patch(client_box)
@@ -405,6 +421,7 @@ class UltraDetailedExplainer:
         ax.text(17.5, 78, "Private: k_c = 7", color=SILVER, fontsize=8, ha='center')
         ax.text(17.5, 73, "Public: P_c = 7·G", color=YELLOW, fontsize=8, ha='center')
         
+        # Server
         server_box = FancyBboxPatch((70, 70), 25, 20, boxstyle="round,pad=0.3",
                                    facecolor=BOX, edgecolor=GREEN, linewidth=2)
         ax.add_patch(server_box)
@@ -412,9 +429,11 @@ class UltraDetailedExplainer:
         ax.text(82.5, 78, "Private: k_s = 3", color=SILVER, fontsize=8, ha='center')
         ax.text(82.5, 73, "Public: P_s = 3·G", color=YELLOW, fontsize=8, ha='center')
         
+        # Attack interception
         self._add_arrow(ax, 32, 80, 68, 80, YELLOW, '-', 2)
         ax.text(50, 83, "P_c → Network → P_s", color=YELLOW, fontsize=8, ha='center')
         
+        # Attacker (eavesdropper)
         attacker_box = FancyBboxPatch((30, 40), 40, 20, boxstyle="round,pad=0.3",
                                      facecolor=BOX, edgecolor=RED, linewidth=2)
         ax.add_patch(attacker_box)
@@ -425,7 +444,7 @@ class UltraDetailedExplainer:
         self._add_glow_text(ax, 50, 20, "With QUANTUM computer, Eve can find k_c!", RED, 14)
         self._save_frame(fig)
         
-        # BSGS steps
+        # Frame: BSGS solving
         for step in range(5):
             fig, ax = self._create_fig(f"QUANTUM ATTACK - STEP {step+1}/5", "Baby-Step Giant-Step in action")
             
@@ -447,12 +466,13 @@ class UltraDetailedExplainer:
                 self._add_box(ax, 5, 80, 90, 15, "PRIVATE KEY RECOVERED",
                             ["k_c = 2·m + 3 = 7",
                              "Verification: 7·G = P_c ✓"], RED)
-            else:
+            else:  # step == 4
                 self._add_box(ax, 5, 80, 90, 15, "SESSION KEY COMPROMISED",
                             ["Eve computes: S = k_c·P_s = 7·P_s",
                              "This is the SAME shared secret as Alice and Bob!",
                              "ALL encrypted messages can now be decrypted"], RED, RED)
             
+            # Visual progress
             if step < 2:
                 progress_text = f"Searching... ({step+1}/5)"
                 progress_color = YELLOW
@@ -465,20 +485,25 @@ class UltraDetailedExplainer:
             
             self._add_glow_text(ax, 50, 50, progress_text, progress_color, 24)
             
+            # Add mathematical details based on step
             if step == 2:
                 ax.text(50, 30, "j·G = P_c - i·mG", color=WHITE, fontsize=14, ha='center', fontfamily='monospace')
                 ax.text(50, 25, "j=3, i=2 → k_c = 2·4 + 3 = 7", color=GREEN, fontsize=14, ha='center', fontfamily='monospace')
             
             self._save_frame(fig)
         
-        # Frame: Final broken
+        # Frame: Final result
         fig, ax = self._create_fig("❌ CLASSICAL ECDH: COMPLETELY BROKEN", "")
         
+        # Big broken lock
         lock_center = (50, 50)
+        # Broken pieces
+        pieces = []
         for i in range(8):
             angle = i * np.pi * 2 / 8
             piece_x = lock_center[0] + np.cos(angle) * 15
             piece_y = lock_center[1] + np.sin(angle) * 15
+            pieces.append((piece_x, piece_y))
             ax.plot(piece_x, piece_y, 'X', color=RED, markersize=12, alpha=0.6)
         
         ax.text(50, 70, "Session Key Exposed", color=RED, fontsize=20, ha='center', fontweight='bold')
@@ -495,12 +520,14 @@ class UltraDetailedExplainer:
         # Frame: Introducing hybrid
         fig, ax = self._create_fig("THE SOLUTION: HYBRID KEY EXCHANGE", "Defense in depth against quantum attacks")
         
+        # Two layers
         self._add_box(ax, 5, 55, 42, 35, "Layer 1: Classical ECDH", [
             "Same as before",
             "Provides classical security",
             "Vulnerable to Shor's algorithm",
             "If broken: ecdh_secret exposed",
             "But ALONE this is dangerous!",
+            "",
             "Status: ⚠️ QUANTUM-VULNERABLE"
         ], ORANGE)
         
@@ -510,11 +537,14 @@ class UltraDetailedExplainer:
             "Lattice-based cryptography",
             "NO known quantum attacks!",
             "Even Shor's algorithm cannot help",
+            "",
             "Status: ✅ QUANTUM-RESISTANT"
         ], GREEN)
         
+        # Combined key
         self._add_box(ax, 20, 15, 60, 25, "Final Session Key", [
             "K = HKDF(ecdh_secret || kyber_secret)",
+            "",
             "🎯 Both components needed!",
             "If ECDH broken → only ecdh_secret known",
             "Kyber_secret remains UNKNOWN",
@@ -535,20 +565,23 @@ class UltraDetailedExplainer:
             "Security level: Kyber-512 provides 128-bit post-quantum security"
         ], GREEN)
         
+        # Lattice visualization
         for i in range(-5, 6):
             for j in range(-5, 6):
                 x = 50 + i*5 + j*2
                 y = 30 + i*3 - j*4
                 ax.plot(x, y, 'o', color=GREEN, markersize=3, alpha=0.5)
         
+        # Highlight the secret
         ax.plot(50, 30, 'o', color=RED, markersize=8, markeredgecolor=WHITE)
         ax.text(50, 27, 'Secret s', color=RED, fontsize=8, ha='center')
         
         ax.text(50, 15, "Finding the right lattice point among billions is IMPOSSIBLE without the key", 
                color=YELLOW, fontsize=10, ha='center')
+        
         self._save_frame(fig)
         
-        # Attack on hybrid
+        # Frame: Attack on hybrid
         for attack_step in range(4):
             fig, ax = self._create_fig(f"QUANTUM ATTACK ON HYBRID - PHASE {attack_step+1}", 
                                       "Trying to break both layers")
@@ -561,11 +594,13 @@ class UltraDetailedExplainer:
                     "ECDH layer: BROKEN"
                 ], ORANGE)
                 
+                # Show ECDH breaking
                 lock1 = FancyBboxPatch((30, 35), 15, 10, boxstyle="round,pad=0.3",
                                       facecolor=RED, edgecolor=RED, alpha=0.3)
                 ax.add_patch(lock1)
                 ax.text(37.5, 40, "ECDH\nBROKEN", color=RED, fontsize=10, ha='center', fontweight='bold')
                 
+                # Show Kyber still standing
                 lock2 = FancyBboxPatch((55, 35), 15, 10, boxstyle="round,pad=0.3",
                                       facecolor=GREEN, edgecolor=GREEN, linewidth=2)
                 ax.add_patch(lock2)
@@ -580,6 +615,7 @@ class UltraDetailedExplainer:
                     "Kyber layer: STILL SECURE"
                 ], GREEN)
                 
+                # Show quantum computer failing
                 ax.text(50, 45, "???", color=RED, fontsize=40, ha='center')
                 ax.text(50, 35, "Unknown kyber_secret", color=RED, fontsize=12, ha='center')
                 
@@ -591,13 +627,14 @@ class UltraDetailedExplainer:
                     "Without kyber_secret: CANNOT compute final key!"
                 ], RED)
                 
+                # Visual representation
                 ax.text(30, 50, "ecdh_secret", color=RED, fontsize=12, ha='center')
                 ax.text(50, 50, "‖", color=WHITE, fontsize=20, ha='center')
                 ax.text(70, 50, "???????????", color=GREEN, fontsize=12, ha='center')
                 
                 self._add_glow_text(ax, 50, 30, "Result: UNKNOWN = Secure", YELLOW, 14)
                 
-            else:
+            else:  # attack_step == 3
                 self._add_box(ax, 5, 70, 90, 25, "RESULT: HYBRID WITHSTANDS QUANTUM ATTACK", [
                     "ECDH layer compromised (partial win for attacker)",
                     "Kyber layer holds strong against quantum attacks",
@@ -605,6 +642,7 @@ class UltraDetailedExplainer:
                     "Defense in depth WORKS!"
                 ], GREEN, GREEN)
                 
+                # Secure lock
                 lock_center = (50, 35)
                 lock = FancyBboxPatch((lock_center[0]-10, lock_center[1]-8), 20, 16,
                                      boxstyle="round,pad=0.5", facecolor=GREEN, 
@@ -618,19 +656,24 @@ class UltraDetailedExplainer:
         """Chapter 5: Side-by-side comparison"""
         print("Creating Final Comparison...")
         
+        # Frame: Comparison table
         fig, ax = self._create_fig("FINAL COMPARISON", "Classical ECDH vs Hybrid ECDH+Kyber")
         
+        # Two columns
+        # Classical
         self._add_box(ax, 5, 40, 42, 55, "CLASSICAL ECDH", [
             "Security: Discrete Log Problem",
             "Quantum attack: Shor's Algorithm",
-            "Attack complexity: Polynomial",
+            "Attack complexity: Polynomial O((log n)³)",
             "Result after quantum:",
             "  ✗ PRIVATE KEY RECOVERED",
             "  ✗ SESSION KEY EXPOSED",
             "  ✗ ALL TRAFFIC DECRYPTABLE",
+            "",
             "Verdict: COMPLETELY BROKEN"
         ], RED)
         
+        # Hybrid
         self._add_box(ax, 53, 40, 42, 55, "HYBRID ECDH+KYBER", [
             "Security: DLP AND Module-LWE",
             "Quantum attack on ECDH: Succeeds",
@@ -640,9 +683,11 @@ class UltraDetailedExplainer:
             "  ✓ Kyber layer secure",
             "  ✓ Session key remains SAFE",
             "  ✓ Traffic still encrypted",
+            "",
             "Verdict: DEFENSE IN DEPTH"
         ], GREEN)
         
+        # Arrows showing outcomes
         self._add_arrow(ax, 47, 30, 47, 15, RED, '-|>', 3)
         self._add_arrow(ax, 53, 30, 53, 15, GREEN, '-|>', 3)
         
@@ -651,14 +696,16 @@ class UltraDetailedExplainer:
         
         self._save_frame(fig)
         
-        # Final conclusion
+        # Frame: Final conclusion
         fig, ax = self._create_fig("CONCLUSION", "The path forward for post-quantum security")
         
         self._add_box(ax, 10, 60, 80, 30, "Key Insights", [
             "1. Classical ECDH relies on ONE mathematical problem (DLP)",
             "   → Quantum computers can break this efficiently → TOTAL FAILURE",
+            "",
             "2. Hybrid ECDH+Kyber requires breaking TWO independent problems",
             "   → Breaking ECDH alone is NOT sufficient → PARTIAL SUCCESS for attacker",
+            "",
             "3. Module-LWE (Kyber) remains hard even for quantum computers",
             "   → Provides long-term security in the post-quantum era"
         ], BLUE)
@@ -666,6 +713,7 @@ class UltraDetailedExplainer:
         self._add_box(ax, 10, 10, 80, 25, "For Your Thesis", [
             "Theorem: If M-LWE is quantum-hard, the hybrid scheme provides",
             "post-quantum confidentiality even when classical ECDH is broken.",
+            "",
             "This is the dual-hardness argument:",
             "Security = min(security_of_layer1, security_of_layer2)",
             "Even if layer1 = 0, layer2 > 0 → overall security > 0"
